@@ -1,0 +1,17 @@
+{
+  "allFiles": [
+    "{client,server,common,test}/**/*.{js,ts,tsx}"
+  ],
+  "files": [
+    "{client,server,common,test}/**/*.{js,ts,tsx}"
+  ],
+  "filesToCheck": ["package.json"],
+  "ignorePackages": [],
+  "ignoreUnused": [
+    "client/js/{Config,InitWeb}.ts",
+    "client/**/*.stories.*",
+    "server/scripts/**/*",
+    "**/*.test.*",
+    "**/*.d.ts"
+  ]
+}

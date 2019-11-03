@@ -1,0 +1,40 @@
+{
+  "extends": "tslint-config-airbnb",
+  "rules": {
+    "ter-arrow-parens": [true, "as-needed"],
+    "import-name": false,
+    "object-shorthand-properties-first": false,
+    "variable-name": [
+      true,
+      "allow-leading-underscore",
+      "ban-keywords",
+      "check-format",
+      "allow-pascal-case"
+    ],
+    "semicolon": [true, "always", "ignore-bound-class-methods"],
+    "max-line-length": false,
+    "ter-indent": false,
+    "no-parameter-reassignment": false,
+    "no-increment-decrement": false,
+    "no-else-after-return": false,
+    "align": false,
+    "ter-func-call-spacing": false,
+    "ter-computed-property-spacing": false,
+    "space-before-function-paren": false,
+    "no-unused-variable": true,
+    "brace-style": false,
+    "function-name": [
+      true,
+      {
+        "function-regex": "^_?[a-z$][\\w\\d]+$",
+        "method-regex": "^(UNSAFE)?_?[a-z$][\\w\\d]+$",
+        "private-method-regex": "^_?[a-z$][\\w\\d]+$",
+        "protected-method-regex": "^_?[a-z$][\\w\\d]+$",
+        "static-method-regex": "^_?[a-z$][\\w\\d]+$"
+      }
+    ]
+  },
+  "linterOptions": {
+    "exclude": ["**/*.json"]
+  }
+}
