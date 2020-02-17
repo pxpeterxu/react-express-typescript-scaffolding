@@ -8,7 +8,7 @@ import Routes from './Routes';
 import DelayedBrowserRouter from './DelayedBrowserRouter';
 import { routes } from './routeDeclarations';
 import DefaultHead from './DefaultHead';
-import { MainStoreData, MainStore } from '../../../common/stores/MainStore';
+import { MainStoreData, MainStore } from '../../../common/Stores/MainStore';
 
 declare global {
   interface Window {

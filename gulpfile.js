@@ -11,6 +11,7 @@ const {
   createRunServerTask,
   createSyncTask,
   createDeleteTask,
+  createWebpackDevServerTask,
 } = require('./gulpfile.lib');
 
 const configFile = `${__dirname}/dev/dev.config.js`;
@@ -19,45 +20,37 @@ const devConfig = fs.existsSync(configFile)
   : require('./dev/dev.config.example');
 
 const serverWatchGlobs = {};
-const clientWatchGlobs = {};
 
 const production = process.env.NODE_ENV === 'production';
+const shouldServerSideRender =
+  production || !!process.env.SHOULD_SERVER_SIDE_RENDER;
 
 // Base client tasks
 const buildClientJSWebpackArgs = {
   sourceFile: 'client/js/InitWeb.ts',
-  destDir: 'dist/app/server/public/js',
+  destDir: 'dist/app/server/public/compiled',
   destFile: 'main.js',
-  cssDestDir: 'dist/app/server/public/assets',
+  cssDestDir: 'dist/app/server/public/compiled',
+  /** Requires both slashes. See https://webpack.js.org/configuration/output/#outputpublicpath */
+  publicPath: '/compiled/',
   production,
   watch: false,
 };
 
 createBuildClientJSWebpackTask('build-client-js', buildClientJSWebpackArgs);
-
-createBuildClientJSWebpackTask('watch-client-js', {
+createWebpackDevServerTask('watch-client-js', buildClientJSWebpackArgs);
+// This version writes the client code to the filesystem, instead of just
+// having it in-memory via `webpack-dev-server`. This is helpful for debugging
+// server-side rendering
+createBuildClientJSWebpackTask('watch-client-js-ssr', {
   ...buildClientJSWebpackArgs,
   watch: true,
 });
 
-createCopyGulpTask(
-  'copy-assets',
-  'client/assets/{**/*,*}',
-  'dist/app/server/public/assets',
-  clientWatchGlobs,
-);
-
 // Client tasks
-gulp.task('build-client', gulp.parallel(['copy-assets', 'build-client-js']));
-createWatchTask('start-watching-client', clientWatchGlobs);
-
-gulp.task(
-  'watch-client',
-  gulp.series(
-    gulp.parallel(['copy-assets', 'watch-client-js']),
-    'start-watching-client',
-  ),
-);
+gulp.task('build-client', gulp.series('build-client-js'));
+gulp.task('watch-client', gulp.series('watch-client-js'));
+gulp.task('watch-client-ssr', gulp.series('watch-client-js-ssr'));
 
 // Base server tasks
 createBuildServerJSTask({
@@ -71,7 +64,7 @@ createBuildServerJSTask({
   serverWatchGlobs,
 });
 
-if (!production) {
+if (!shouldServerSideRender) {
   // In development, we generally don't need to rebuild/restart the
   // server for client changes since we don't do server-side rendering
   serverWatchGlobs['build-server-js'] = [
@@ -85,19 +78,26 @@ if (!production) {
 // and substituted in using @loadable/webpack-plugin
 createRevRenameTask(
   'rev-rename-client',
-  'dist/app/server/public/assets/main.css',
-  'dist/app/server/public/assets',
-  'dist/app/server/public/js',
+  'dist/app/server/public/compiled/main.css',
+  'dist/app/server/public/compiled',
+  'dist/app/server/public/compiled',
   production,
 );
 
 createBuildViewsTask('build-views', {
   glob: 'server/views/*.ejs',
   dest: 'dist/app/server/views',
-  revManifestPath: 'dist/app/server/public/js/rev-manifest.json',
+  revManifestPath: 'dist/app/server/public/compiled/rev-manifest.json',
   production,
   watchGlobs: serverWatchGlobs,
 });
+
+createCopyGulpTask(
+  'copy-assets',
+  'client/assets/{**/*,*}',
+  'dist/app/server/public/assets',
+  serverWatchGlobs,
+);
 
 createCopyGulpTask(
   'copy-static',
@@ -123,12 +123,19 @@ const env = {
   DATABASE: process.env.DATABASE || sanitizedNodeEnv,
 };
 
-const runWatchGlobs = ['dist/app', '!dist/app/server/public'];
+const runWatchGlobs = ['dist/app'];
+
+if (!shouldServerSideRender) {
+  // If server-side-rendering, we restart the server even on client JS changes.
+  // In all other cases, only restart the server on server changes
+  runWatchGlobs.push('!dist/app/server/public');
+}
 
 gulp.task(
   'build-server',
   gulp.parallel([
     'build-server-js',
+    'copy-assets',
     'copy-static',
     'rename-and-copy-client',
     'create-log-dir',
@@ -154,9 +161,27 @@ gulp.task(
 // 1. For building the web server and client
 gulp.task('build-all', gulp.series('build-client', 'build-server'));
 
-gulp.task('watch-all', gulp.series('watch-client', 'watch-server'));
+gulp.task('watch-all', gulp.parallel(['watch-client', 'watch-server']));
+
+async function ensureServerSideRenderingEnabled() {
+  if (!shouldServerSideRender) {
+    throw new Error(
+      'SHOULD_SERVER_SIDE_RENDER=1 must be set to run this command',
+    );
+  }
+}
+
+gulp.task(
+  'watch-all-ssr',
+  gulp.series(
+    ensureServerSideRenderingEnabled,
+    gulp.parallel(['watch-client-ssr', 'watch-server']),
+  ),
+);
 
 gulp.task('all', gulp.series('watch-all'));
+
+gulp.task('all-ssr', gulp.series('watch-all-ssr'));
 
 // Sync tasks
 const syncGlobs = [

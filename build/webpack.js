@@ -152,6 +152,29 @@ function getWebpackConfig(
           ]
         : undefined,
     },
+    devServer: {
+      /** Enables proxying the root "/" path */
+      index: '',
+      port: 7001,
+      /**
+       * All compiled .js and .css files are served at this path. Defaults to
+       * root ("/").
+       */
+      publicPath: extraConfigToMerge.output.publicPath
+        ? extraConfigToMerge.output.publicPath
+        : undefined,
+      proxy: [
+        {
+          context: () => true, // Redirect all requests we can't serve
+          target: `http://localhost:60987`,
+        },
+        {
+          context: () => true, // Redirect all requests we can't serve
+          target: 'ws://localhost:60987',
+          ws: true,
+        },
+      ],
+    },
   };
 
   if (hasCss) {

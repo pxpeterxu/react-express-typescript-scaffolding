@@ -5,7 +5,6 @@ import {
   RouteComponentProps,
   withRouter,
   matchPath,
-  Redirect,
 } from 'react-router';
 import Head from '../Head';
 import { routes } from './routeDeclarations';
@@ -79,8 +78,8 @@ class Routes extends React.Component<Props> {
         <FakeTopProgressBar done={!loading} seconds={0.25} />
 
         <Switch>
-          <Redirect exact path="/gsb" to="/groups/gsb" />
           {routes.map((route, index) => (
+            // eslint-disable-next-line react/no-array-index-key
             <Route key={index} {...route} />
           ))}
         </Switch>

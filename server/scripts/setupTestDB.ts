@@ -4,12 +4,12 @@ import db from '../libs/db';
 
 requireDir('../models');
 
-async function createDatabase(db: sequelize.Sequelize) {
-  await db.query('SET FOREIGN_KEY_CHECKS = 0');
-  await db.sync({ logging: console.log, force: true });
-  await db.query('SET FOREIGN_KEY_CHECKS = 1');
+async function createDatabase(dbInstance: sequelize.Sequelize) {
+  await dbInstance.query('SET FOREIGN_KEY_CHECKS = 0');
+  await dbInstance.sync({ logging: console.log, force: true });
+  await dbInstance.query('SET FOREIGN_KEY_CHECKS = 1');
   console.log('Done');
-  await db.close();
+  await dbInstance.close();
 }
 
 async function main() {

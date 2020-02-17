@@ -15,14 +15,17 @@ import config from '../config';
 import DefaultHead from '../../client/templates/Router/DefaultHead';
 import { logError } from '../../common/logging';
 import { serializeForScript } from '../../common/serializeForScript';
-import { MainStore } from '../../common/stores/MainStore';
+import { MainStore } from '../../common/Stores/MainStore';
 import { ClientConfig } from '../../common/types';
 
 //
 // For @loadable/component: loads all code-split asynchronous includes
 // on the server side before returning to client
 //
-const statsFile = path.join(__dirname, '../public/js/loadable-stats.json');
+const statsFile = path.join(
+  __dirname,
+  '../public/compiled/loadable-stats.json',
+);
 let splitCodeExtractor: ChunkExtractor | null = null;
 if (config.shouldServerSideRender) {
   if (fs.existsSync(statsFile)) {

@@ -19,7 +19,8 @@ module.exports = getWebpackConfig(
     },
     output: {
       filename: '[name].js',
-      path: path.join(__dirname, 'dist/app/server/public/js'),
+      path: path.join(__dirname, 'dist/app/server/public/compiled'),
+      publicPath: '/compiled/',
     },
   },
 );

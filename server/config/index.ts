@@ -88,13 +88,14 @@ function readAndParseEnv(file: string) {
 }
 
 export function loadConfig(database: Environment, nodeEnv: Environment) {
-  const dbEnvFile = getDBEnvFile(database);
-  const webEnvFile = getWebEnvFile(nodeEnv);
+  const configDbEnvFile = getDBEnvFile(database);
+  const configWebEnvFile = getWebEnvFile(nodeEnv);
   const env: { [key: string]: string } = {
-    ...readAndParseEnv(`${dirname}/../${dbEnvFile}`),
-    ...readAndParseEnv(`${dirname}/${dbEnvFile}`),
-    ...readAndParseEnv(`${dirname}/../${webEnvFile}`),
-    ...readAndParseEnv(`${dirname}/${webEnvFile}`),
+    ...readAndParseEnv(`${dirname}/../${configDbEnvFile}`),
+    ...readAndParseEnv(`${dirname}/${configDbEnvFile}`),
+    ...readAndParseEnv(`${dirname}/../${configWebEnvFile}`),
+    ...readAndParseEnv(`${dirname}/${configWebEnvFile}`),
+    ...process.env,
     NODE_ENV: nodeEnv,
     DATABASE: database,
   };
@@ -109,7 +110,9 @@ export function loadConfig(database: Environment, nodeEnv: Environment) {
       host: env.WEB_HOST || `localhost:${DEFAULT_WEB_PORT}`,
       linkHost: (() => {
         if (env.WEB_HOST) {
-          const isHttp = new RegExp(`:${DEFAULT_WEB_PORT}$`).test(env.WEB_HOST);
+          const isHttp = new RegExp(`:(${DEFAULT_WEB_PORT}|7001)$`).test(
+            env.WEB_HOST,
+          );
           const scheme = isHttp ? 'http' : 'https';
           return `${scheme}://${env.WEB_HOST}`;
         }
@@ -134,7 +137,11 @@ export function loadConfig(database: Environment, nodeEnv: Environment) {
 
     isProduction,
     isDevelopment,
-    shouldServerSideRender: !isProduction,
+    /**
+     * shouldServerSideRender is tied to the build process, so make sure that
+     * we built (using gulp build-all) with the same NODE_ENV as we're running
+     */
+    shouldServerSideRender: isProduction || !!env.SHOULD_SERVER_SIDE_RENDER,
 
     logstashHost: env.LOGSTASH_HOST,
     logPort: 59300,

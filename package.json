@@ -113,6 +113,7 @@
     "vinyl-source-stream": "^2.0.0",
     "watchify": "^3.11.1",
     "webpack": "^4.31.0",
+    "webpack-dev-server": "^3.10.3",
     "webpack-stream": "^5.2.1"
   },
   "dependencies": {

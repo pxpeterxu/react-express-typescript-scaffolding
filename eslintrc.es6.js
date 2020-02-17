@@ -103,6 +103,7 @@ module.exports = {
           '**/*.test.*',
           '**/*.stories.*',
           'server/scripts/db.ts',
+          'server/scripts/setupTestDB.ts',
           '**/tests/**',
           'gulpfile*',
           'mobile/storybook/**/*',

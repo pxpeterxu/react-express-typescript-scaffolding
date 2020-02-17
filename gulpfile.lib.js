@@ -8,12 +8,15 @@ const sass = require('gulp-sass');
 const sourcemaps = require('gulp-sourcemaps');
 const ts = require('gulp-typescript');
 const zip = require('gulp-zip');
-const webpack = require('webpack-stream');
+const webpackStream = require('webpack-stream');
 const through = require('through2');
 const rsync = require('gulp-rsync');
 const revReplace = require('gulp-rev-replace');
 const fs = require('fs');
 const del = require('del');
+const path = require('path');
+const webpack = require('webpack');
+const WebpackDevServer = require('webpack-dev-server');
 
 const getWebpackConfig = require('./build/webpack');
 
@@ -31,6 +34,7 @@ function createCheckServerJSTask({
   serverWatchGlobs = undefined,
 }) {
   if (serverWatchGlobs) {
+    // eslint-disable-next-line no-param-reassign
     serverWatchGlobs[name] = globs;
   }
 
@@ -50,6 +54,7 @@ function createBuildServerJSTask({
   serverWatchGlobs = undefined,
 }) {
   if (serverWatchGlobs) {
+    // eslint-disable-next-line no-param-reassign
     serverWatchGlobs[name] = globs;
   }
 
@@ -73,6 +78,7 @@ function createBuildClientJSWebpackTask(
     destDir,
     cssDestDir,
     cssDestFile,
+    publicPath,
     production = false,
     watch = false,
     hasCss = true,
@@ -80,12 +86,13 @@ function createBuildClientJSWebpackTask(
   },
 ) {
   const destFileParts = destFile.split('.');
+  let outputFile = destFile;
 
   // In production mode, add a suffix for caching
   // (see https://webpack.js.org/guides/caching)
   if (production && !isMobile) {
     destFileParts.splice(destFileParts.length - 1, 0, '[contenthash:8]');
-    destFile = destFileParts.join('.');
+    outputFile = destFileParts.join('.');
   }
 
   const webpackConfig = getWebpackConfig(
@@ -101,7 +108,7 @@ function createBuildClientJSWebpackTask(
       emitLoadable: !isMobile,
     },
     {
-      output: { filename: destFile, publicPath: '/js/' },
+      output: { filename: outputFile, publicPath },
       watch,
     },
   );
@@ -113,7 +120,7 @@ function createBuildClientJSWebpackTask(
 
     gulp
       .src(sourceFile)
-      .pipe(webpack(webpackConfig))
+      .pipe(webpackStream(webpackConfig))
       .pipe(gulpIf(/\.css/, gulp.dest(cssDestDir)))
       .pipe(gulpIf(/\.js/, gulp.dest(destDir)))
       .pipe(
@@ -141,6 +148,43 @@ function createBuildClientJSWebpackTask(
           cb(null, file);
         }),
       );
+  });
+}
+
+/** Creates a task to run the Webpack dev server */
+function createWebpackDevServerTask(name, { sourceFile, publicPath }) {
+  const webpackConfig = getWebpackConfig(
+    {
+      hasCss: true,
+      minimize: false,
+      useSourceMaps: true,
+      useCssSourceMaps: true,
+      production: false,
+      splitChunks: true,
+      emitLoadable: true,
+    },
+    {
+      entry: {
+        main: path.join(__dirname, sourceFile),
+      },
+      output: {
+        filename: '[name].js',
+        publicPath,
+      },
+    },
+  );
+
+  gulp.task(name, cb => {
+    // Based off of code from https://github.com/webpack/webpack-dev-server/blob/db5ce44/examples/api/simple/server.js
+    const compiler = webpack(webpackConfig);
+    const server = new WebpackDevServer(compiler, webpackConfig.devServer);
+    server.listen(7001, '127.0.0.1', error => {
+      console.log('Starting server on http://localhost:7001');
+      if (error) {
+        console.error(error);
+      }
+      cb();
+    });
   });
 }
 
@@ -182,6 +226,7 @@ function createBuildViewsTask(
   },
 ) {
   if (watchGlobs) {
+    // eslint-disable-next-line no-param-reassign
     watchGlobs[name] = glob;
   }
 
@@ -195,6 +240,7 @@ function createBuildViewsTask(
         }),
       );
       if (watchGlobs) {
+        // eslint-disable-next-line no-param-reassign
         watchGlobs[name] = `{${watchGlobs[name]},${revManifestPath}}`;
       }
     } else {
@@ -213,6 +259,7 @@ function createBuildSassTask(
   watchGlobs = undefined,
 ) {
   if (watchGlobs) {
+    // eslint-disable-next-line no-param-reassign
     watchGlobs[name] = glob;
   }
 
@@ -239,6 +286,7 @@ function createBuildSassTask(
 
 function createCopyGulpTask(taskName, globs, destDir, watchGlobsVar) {
   if (watchGlobsVar) {
+    // eslint-disable-next-line no-param-reassign
     watchGlobsVar[taskName] = globs;
   }
 
@@ -263,14 +311,14 @@ function createCreateDirectoriesGulpTask(taskName, directories) {
 function createRunServerTask(name, script, watchDirs, env = {}) {
   gulp.task(name, cb => {
     nodemon({
-      script: script,
+      script,
       ext: 'js json ejs css jpg png',
       env,
       delay: 200, // Delay is in milliseconds
       watch: watchDirs,
       stdout: false,
       verbose: true,
-    }).on('readable', function() {
+    }).on('readable', function onStarted() {
       this.stdout.pipe(process.stdout);
       this.stderr.pipe(process.stderr);
       cb();
@@ -289,6 +337,7 @@ function createSyncTask(name, srcGlobs, rsyncOptions) {
  */
 function createDeleteTask(name, globs) {
   gulp.task(name, () => {
+    // eslint-disable-next-line no-param-reassign
     globs = globs instanceof Array ? globs : [globs];
     return del(globs);
   });
@@ -305,6 +354,7 @@ function createZipTask(
   watchGlobs = undefined,
 ) {
   if (watchGlobs) {
+    // eslint-disable-next-line no-param-reassign
     watchGlobs[name] = globs;
   }
 
@@ -320,6 +370,7 @@ module.exports = {
   createCheckServerJSTask,
   createBuildServerJSTask,
   createBuildClientJSWebpackTask,
+  createWebpackDevServerTask,
   createWatchTask,
   createRevRenameTask,
   createBuildViewsTask,

@@ -6,7 +6,9 @@ import serialize, { SerializeJSOptions } from 'serialize-javascript';
  * removes circular references and makes sure that we escape
  * </script> tags
  */
-export function serializeForScript(data: any, options?: SerializeJSOptions) {
-  if (!options) options = {};
+export function serializeForScript(
+  data: any,
+  options: SerializeJSOptions = {},
+) {
   return serialize(JSON.parse(stringify(data)), { ...options, isJSON: true });
 }

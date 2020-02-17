@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Container, Navbar } from 'react-bootstrap';
+import { Navbar } from 'react-bootstrap';
 import { LinkContainer } from 'react-router-bootstrap';
 import { adminEmail, adminName, siteName } from '../../common/constants';
 

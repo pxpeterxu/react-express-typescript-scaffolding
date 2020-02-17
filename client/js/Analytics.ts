@@ -69,7 +69,7 @@ export function trackPageview({
   }
 
   if (window.analytics) {
-    const prefix = `${location.protocol}//${location.host}`;
+    const prefix = `${window.location.protocol}//${window.location.host}`;
     window.analytics.page(pageName, {
       url: prefix + path,
       path,
@@ -138,8 +138,9 @@ function extractCustomErrorData(error: Error) {
 
   // Capture the extra metadata on an error object too
   for (const key of Object.getOwnPropertyNames(error)) {
-    if (standardFields.includes(key)) continue;
-    customData[key] = error[key];
+    if (!standardFields.includes(key)) {
+      customData[key] = error[key];
+    }
   }
 
   return customData;
